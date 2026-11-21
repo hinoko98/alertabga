@@ -1,4 +1,4 @@
-// VerificaciÃ³n E2E: login real contra Supabase local y render del panel con cookie de sesiÃ³n SSR.
+// Verificación E2E: login real contra Supabase local y render del panel con cookie de sesión SSR.
 import { createClient } from "@supabase/supabase-js";
 
 const [, , email, password] = process.argv;

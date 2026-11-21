@@ -12,7 +12,7 @@ insert into public.quadrants (id, code, name, boundary, boundary_source) values
 insert into public.incidents (id, radicado, category_id, description, occurred_at, received_at,
                               location, source, anon_token_hash, status, verification_level, quadrant_id)
 select '00000000-0000-0000-0000-0000000000c1'::uuid, 'MANIPULADO', id,
-       'DescripciÃ³n suficientemente larga', now() - interval '1 hour', '2000-01-01',
+       'Descripción suficientemente larga', now() - interval '1 hour', '2000-01-01',
        'SRID=4326;POINT(-73.12 7.12)', 'APP_ANONIMO', 'hash', 'CERRADO', 'DELITO_CONFIRMADO', null
 from public.categories where name = 'Hurto';
 
@@ -26,24 +26,24 @@ select is((select status::text from public.incidents where id = '00000000-0000-0
 select is((select verification_level::text from public.incidents where id = '00000000-0000-0000-0000-0000000000c1'),
   'REPORTE_CIUDADANO', 'nivel inicial forzado a REPORTE_CIUDADANO');
 select is((select quadrant_id from public.incidents where id = '00000000-0000-0000-0000-0000000000c1'),
-  '00000000-0000-0000-0000-0000000000a1'::uuid, 'cuadrante asignado por polÃ­gono');
+  '00000000-0000-0000-0000-0000000000a1'::uuid, 'cuadrante asignado por polígono');
 select is((select count(*)::int from public.incident_history
            where incident_id = '00000000-0000-0000-0000-0000000000c1' and action = 'CREADO' and not is_internal),
   1, 'historial CREADO visible al ciudadano');
 
--- 7: fuera del Ã¡mbito territorial se marca, no se elimina (RB-07)
+-- 7: fuera del ámbito territorial se marca, no se elimina (RB-07)
 insert into public.incidents (id, radicado, category_id, description, occurred_at, location, source, anon_token_hash)
 select '00000000-0000-0000-0000-0000000000c2'::uuid, 'x', id, 'Reporte fuera del municipio', now(),
        'SRID=4326;POINT(-74.07 4.71)', 'APP_ANONIMO', 'hash2'
 from public.categories where name = 'Hurto';
 select ok((select out_of_scope and quadrant_id is null from public.incidents where id = '00000000-0000-0000-0000-0000000000c2'),
-  'fuera de Ã¡mbito marcado y sin cuadrante (cola manual)');
+  'fuera de ámbito marcado y sin cuadrante (cola manual)');
 
 -- 8-11: transiciones
 select lives_ok($$update public.incidents set status = 'EN_REVISION' where id = '00000000-0000-0000-0000-0000000000c1'$$,
-  'RECIBIDO â†’ EN_REVISION permitido');
+  'RECIBIDO → EN_REVISION permitido');
 select throws_ok($$update public.incidents set status = 'EN_ATENCION' where id = '00000000-0000-0000-0000-0000000000c1'$$,
-  'P0001', null, 'EN_REVISION â†’ EN_ATENCION rechazado');
+  'P0001', null, 'EN_REVISION → EN_ATENCION rechazado');
 select throws_ok($$update public.incidents set status = 'NO_PROCEDE' where id = '00000000-0000-0000-0000-0000000000c1'$$,
   'P0001', null, 'NO_PROCEDE sin motivo rechazado');
 select lives_ok($$update public.incidents set status = 'NO_PROCEDE', closure_reason = 'Duplicado de otro radicado'
@@ -55,14 +55,14 @@ select throws_ok($$update public.incidents set status = 'EN_REVISION' where id =
 select throws_ok($$update public.incidents set received_at = now() - interval '3 days' where id = '00000000-0000-0000-0000-0000000000c2'$$,
   'P0001', null, 'received_at inmutable');
 
--- 13-14: historial y auditorÃ­a inalterables
+-- 13-14: historial y auditoría inalterables
 select throws_ok($$update public.incident_history set note = 'editado'$$, 'P0001', null, 'historial no se edita');
 insert into public.audit_logs (action, entity) values ('PRUEBA', 'test');
-select throws_ok($$delete from public.audit_logs$$, 'P0001', null, 'auditorÃ­a no se borra');
+select throws_ok($$delete from public.audit_logs$$, 'P0001', null, 'auditoría no se borra');
 
 -- 15: rate limit
 select is((select array_agg(public.check_rate_limit('test-key', 2, interval '1 hour')) from generate_series(1,3)),
-  array[true, true, false], 'rate limit bloquea el intento mÃ¡x+1');
+  array[true, true, false], 'rate limit bloquea el intento máx+1');
 
 -- 16-17: alta en auth crea perfil ciudadano (aunque el metadato pida otro rol)
 insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, raw_app_meta_data, created_at, updated_at)

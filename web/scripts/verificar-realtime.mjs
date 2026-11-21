@@ -1,4 +1,6 @@
-// Realtime: admin debe recibir el INSERT; un ciudadano ajeno NO (RLS). El incidente se elimina no se puede (historial inmutable) â†’ se usa rollback lÃ³gico: se deja marcado como prueba.
+// Verifica Supabase Realtime + RLS: el administrador recibe el INSERT; un ciudadano ajeno NO.
+// SOLO PARA ENTORNO LOCAL: crea un incidente rotulado "PRUEBA E2E" (el historial es inmutable; `supabase db reset` lo limpia).
+// Uso: node --env-file=.env.local scripts/verificar-realtime.mjs  (requiere usuarios admin.local@ y ciudadano.prueba@ locales)
 import { createClient } from "@supabase/supabase-js";
 
 const anon = process.env.SUPABASE_ANON_KEY;
@@ -27,7 +29,7 @@ const svc = createClient(URL, service, { auth: { persistSession: false } });
 const { data: cat } = await svc.from("categories").select("id").eq("name", "Hurto").single();
 const t0 = Date.now();
 const { data: inc, error } = await svc.from("incidents").insert({
-  radicado: "x", category_id: cat.id, description: "PRUEBA E2E REALTIME â€” entorno local de desarrollo",
+  radicado: "x", category_id: cat.id, description: "PRUEBA E2E REALTIME — entorno local de desarrollo",
   occurred_at: new Date().toISOString(), location: "SRID=4326;POINT(-73.12 7.12)",
   source: "APP_ANONIMO", anon_token_hash: "e2e",
 }).select("radicado").single();
@@ -35,6 +37,6 @@ if (error) throw error;
 
 await new Promise((r) => setTimeout(r, 4000));
 console.log("insertado", inc.radicado);
-console.log("admin recibiÃ³:", admin.got, admin.got.length ? `(< ${Date.now() - t0} ms ventana)` : "");
-console.log("ciudadano ajeno recibiÃ³:", citizen.got);
+console.log("admin recibió:", admin.got, admin.got.length ? `(< ${Date.now() - t0} ms ventana)` : "");
+console.log("ciudadano ajeno recibió:", citizen.got);
 process.exit(admin.got.includes(inc.radicado) && citizen.got.length === 0 ? 0 : 1);
