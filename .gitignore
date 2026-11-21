@@ -1,0 +1,42 @@
+# Secretos y entornos
+.env
+.env.*
+!.env.example
+env.json
+!env.example.json
+supabase/.env
+supabase/.temp/
+supabase/.branches/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+web/.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Flutter / Android
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/android/local.properties
+mobile/android/key.properties
+*.jks
+*.keystore
+
+# Datos crudos descargados (pesados, se regeneran con scripts)
+data/raw/
+
+# Herramientas
+.superpowers/
+.DS_Store
+Thumbs.db
+~$*.docx
