@@ -34,7 +34,8 @@ uvicorn api.index:app --reload --port 8000
 cd web
 cp .env.example .env.local  # completar con los valores de `supabase start`
 npm install
-npm run dev                 # http://localhost:3000
+npm run dev -- -p 4000      # http://localhost:4000 (en Windows con Hyper-V el rango 2982–3581 suele estar reservado)
+node --env-file=.env.local scripts/verificar-realtime.mjs   # Realtime + RLS (solo local)
 
 # 4. App móvil
 cd mobile

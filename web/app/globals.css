@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* Identidad AlertaBGA: azul institucional, cian tecnológico, ámbar de alerta */
+:root {
+  --navy-950: #061428;
+  --navy-900: #0b1f3a;
+  --navy-800: #13305a;
+  --navy-700: #1d4278;
+  --cyan-500: #06b6d4;
+  --cyan-400: #22d3ee;
+  --amber-500: #f59e0b;
+  --amber-400: #fbbf24;
+  --slate-50: #f6f8fb;
+  --slate-100: #eef2f7;
+  --slate-200: #dde4ee;
+  --slate-500: #64748b;
+  --slate-700: #334155;
+  --danger: #dc2626;
+  --success: #059669;
+
+  --bg: var(--slate-50);
+  --surface: #ffffff;
+  --text: #0f1b2d;
+  --text-muted: var(--slate-500);
+  --border: var(--slate-200);
+}
+
+@theme inline {
+  --color-navy-950: var(--navy-950);
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-signal: var(--cyan-500);
+  --color-signal-soft: var(--cyan-400);
+  --color-alert: var(--amber-500);
+  --color-alert-soft: var(--amber-400);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-line: var(--border);
+  --color-danger: var(--danger);
+  --color-ok: var(--success);
+  --font-sans: var(--font-public-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-public-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan-500);
+  outline-offset: 2px;
+}
