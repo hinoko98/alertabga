@@ -1,7 +1,7 @@
 -- Reglas de negocio: radicado, sello de servidor, transiciones, inmutabilidad, rate limit, perfiles
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(18);
 
 -- Datos de prueba
 insert into public.quadrants (id, code, name, boundary, boundary_source) values
