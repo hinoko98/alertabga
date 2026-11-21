@@ -91,6 +91,17 @@
 - Configuración vía `--dart-define-from-file=env.json`.
 - [ ] `flutter analyze` sin errores y `flutter test` pasa. Commit.
 
+### Task 9: MongoDB + PySpark (histórico y analítica)
+**Files:** `docker-compose.yml` (mongo:7), `analytics/requirements.txt`, `analytics/alertabga_etl/{__init__,limpieza,agregaciones,mongo_sink,pipeline}.py`, `analytics/tests/{conftest,test_limpieza,test_agregaciones}.py`, `web/api/alertabga/mongo.py`, `web/api/alertabga/routers/historico.py`, `web/api/tests/test_historico.py`
+**Produces:**
+- `limpiar(df) -> DataFrame`: coordenadas válidas dentro del bbox de Bucaramanga (lat 7.03–7.17, lon −73.20 −73.05), solo municipio BUCARAMANGA, columnas normalizadas
+- `agregar(df) -> DataFrame` con `dimension ∈ {categoria, barrio, comuna, anio, mes}`, `clave`, `conteo`
+- `escribir_mongo(df, uri, db, coleccion)` vía `pymongo` en lotes de 1000
+- FastAPI: `GET /api/py/historico/resumen` → `{periodo:"2010-2021", fuente, total, top_barrios[]}`; `GET /api/py/historico/agregados?dimension=` (requiere rol institucional)
+- [ ] Pruebas Spark (SparkSession local[1]): descarta coordenadas fuera del bbox y otros municipios; conteos por barrio correctos sobre un DataFrame de 6 filas construido en la prueba.
+- [ ] Pruebas API con `mongomock`: `resumen` incluye `periodo == "2010-2021"`; `agregados` sin token → 401; dimensión inválida → 422.
+- [ ] FAIL → implementar → PASS → commit.
+
 ### Task 8: Investigación de fuentes de datos
 **Files:** `docs/datos/fuentes.md`
 - [ ] Localizar el dataset histórico (URL oficial, licencia, columnas), fuentes posteriores a 2021 y fuentes oficiales de cuadrantes (MNVCC, Policía Metropolitana de Bucaramanga). Registrar qué se encontró y qué no, sin inventar. Commit.

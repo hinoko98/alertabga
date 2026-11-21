@@ -30,11 +30,14 @@ Stack fijo: Next.js, TypeScript, Tailwind, Leaflet o MapLibre en Vercel; FastAPI
 
 ## 4. Enfoques considerados (base de datos)
 
-1. **Todo en Supabase/Postgres — ELEGIDO por el usuario.** El histórico 2010–2021 va en tablas Postgres separadas (`historical_crimes` y agregados). Una sola base, con RLS, Realtime, Auth y PostGIS nativos.
-2. Supabase operativo + MongoDB Atlas solo para el histórico. Descartado: un segundo proveedor sin beneficio claro.
+1. Todo en Supabase/Postgres. Elegido primero y luego **reemplazado** por indicación del usuario ("mongo y pyspark hay que dejar esos dos").
+2. **Supabase operativo + MongoDB para el histórico y la analítica + PySpark como ETL por lotes — VIGENTE.**
 3. Todo en MongoDB. Descartado: contradice el prompt y obliga a rehacer RLS, Auth y tiempo real.
 
-**Nota de decisión:** esto reemplaza la mención a MongoDB del Word y de la nota final del usuario. Se registrará como ADR. PySpark queda fuera del MVP: Postgres y SQL agregan 135 mil filas sin problema. Si se necesita, se usa como ETL de una sola vez.
+**Decisión vigente (ADR 0001 rev. 2):**
+- Supabase guarda toda la operación.
+- MongoDB guarda `historical_crimes` (2010–2021) y `historical_aggregates`. FastAPI lo lee (`/api/py/historico/*`).
+- PySpark (`analytics/`) limpia, valida y agrega el histórico, y escribe en Mongo. Se ejecuta fuera de Vercel.
 
 ## 5. Arquitectura
 
@@ -58,7 +61,9 @@ Next.js (web) ─────┘   Next.js + /api/py/*  │
 
 `profiles` (1:1 con auth.users, `role_id`, cuadrantes de ámbito), `roles` (ciudadano, operador, supervisor, administrador), `categories` (nombre, descripción, icono, color, severidad, activa), `incidents` (radicado único, `geography(Point,4326)` con índice GiST, `accuracy_m`, `occurred_at`, `received_at` por defecto `now()` del servidor, estado, prioridad sugerida, fuente, `reporter_id` nullable, `quadrant_id`, `verification_level`: reporte/verificado/confirmado, hash del token anónimo), `quadrants`, `evidence`, `assignments`, `incident_history` (solo inserción: triggers que bloquean UPDATE y DELETE), `institutional_messages` (visibles al ciudadano; las notas internas viven en `incident_history`), `notifications`, `audit_logs` (solo inserción).
 
-Tablas adicionales (mi llamada): `historical_crimes` y `historical_aggregates` (2010–2021, con `source` y `period` explícitos) y `app_settings` (ámbito territorial, límites).
+Tablas adicionales en Postgres (mi llamada): `app_settings` (ámbito territorial, límites), `profile_quadrants` y `rate_limits`.
+
+Colecciones en MongoDB: `historical_crimes` (registro limpio, `location` GeoJSON con `2dsphere`, `periodo`, `fuente`) y `historical_aggregates` (`dimension`, `clave`, `anio`, `mes`, `conteo`, `fuente`, `generado_en`).
 
 Radicado: formato `BGA-AAAA-NNNNNN` generado por función SQL con secuencia.
 
@@ -101,7 +106,8 @@ Cada fase termina con comandos exactos para ejecutarla y comprobarla. No se pasa
 
 ## 10. Decisiones mías (a revisar)
 
-- Se omite PySpark del MVP (§4).
+- MongoDB: Atlas en producción y `mongo:7` en Docker para desarrollo (`docker-compose.yml` en la raíz).
+- PySpark 4.x en `analytics/`, con Java 17+ y conector propio vía `pymongo` (sin dependencia del Spark–Mongo connector, para no atarse a versiones de Scala).
 - Se excluye cualquier "Firebase como BD". FCM (push) queda para una fase tardía y opcional.
 - El tamaño de imagen será ≤ 5 MB y los MIME serán `image/jpeg`, `image/png` y `image/webp`; hasta 3 fotos por reporte. Son parámetros ajustables.
 - Mapas: MapLibre/Leaflet con teselas de OpenStreetMap solo para desarrollo. Hay que revisar los términos de uso antes de producción y elegir un proveedor.
