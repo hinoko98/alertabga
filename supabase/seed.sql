@@ -18,7 +18,7 @@ on conflict (name) do nothing;
 -- Se reemplaza por el polígono oficial cuando la entidad lo suministre.
 insert into public.app_settings (key, value, description) values
   ('territorial_scope',
-   '{"type":"bbox","min_lat":7.03,"max_lat":7.17,"min_lon":-73.20,"max_lon":-73.05,"official":false}',
+   '{"type":"bbox","min_lat":7.03,"max_lat":7.25,"min_lon":-73.20,"max_lon":-73.03,"official":false}',
    'Ámbito territorial de validación de reportes'),
   ('evidence_limits',
    '{"max_bytes":5242880,"max_files":3,"mime":["image/jpeg","image/png","image/webp"]}',
