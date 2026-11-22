@@ -13,7 +13,16 @@ Plataforma de seguridad ciudadana para Bucaramanga: app Android de reportes geol
 | `mobile/` | App Flutter (Android) |
 | `docs/` | Diseño, planes, ADR, configuración, fuentes de datos |
 
-## Desarrollo local
+## Cómo lanzar y probar
+
+**Guía paso a paso (web y móvil): [`docs/GUIA-PRUEBAS.md`](docs/GUIA-PRUEBAS.md)**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\iniciar-entorno.ps1   # levanta todo
+powershell -ExecutionPolicy Bypass -File scripts\verificar-todo.ps1    # todas las pruebas
+```
+
+## Desarrollo local (detalle)
 
 Requisitos: Node ≥ 20, Python 3.11, Docker Desktop, Flutter ≥ 3.38, Android SDK.
 

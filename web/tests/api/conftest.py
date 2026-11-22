@@ -13,6 +13,12 @@ os.environ.update(
         "SUPABASE_SERVICE_ROLE_KEY": "service-test",
         "SUPABASE_JWT_SECRET": TEST_SECRET,
         "API_ALLOWED_ORIGINS": "http://localhost:3000",
+        # Aísla las pruebas del .env.local del desarrollador (las variables de entorno tienen prioridad)
+        "MONGODB_URI": "",
+        "R2_ACCOUNT_ID": "",
+        "R2_ACCESS_KEY_ID": "",
+        "R2_SECRET_ACCESS_KEY": "",
+        "R2_BUCKET": "",
     }
 )
 
