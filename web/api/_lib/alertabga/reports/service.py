@@ -122,6 +122,7 @@ class ReportService:
 
     def _detail(self, inc: dict) -> ReportDetail:
         return ReportDetail(
+            id=inc["id"],
             radicado=inc["radicado"],
             category=inc["category"],
             status=inc["status"],

@@ -40,6 +40,13 @@ dependencies:
   dio: ^5.11.1
   flutter_localizations:
     sdk: flutter
+  geolocator: ^14.1.2
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  image_picker: ^1.2.4
+  flutter_secure_storage: ^11.2.0
+  url_launcher: ^6.3.3
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:

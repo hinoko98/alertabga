@@ -73,6 +73,7 @@ class ReportSummary(BaseModel):
 
 
 class ReportDetail(BaseModel):
+    id: str
     radicado: str
     category: str
     status: str

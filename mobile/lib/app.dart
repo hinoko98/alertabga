@@ -1,25 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'features/system/system_status_screen.dart';
 
-final _router = GoRouter(
-  routes: [
-    GoRoute(path: '/', builder: (context, state) => const SystemStatusScreen()),
-  ],
-);
-
-class AlertaBgaApp extends StatelessWidget {
+class AlertaBgaApp extends ConsumerWidget {
   const AlertaBgaApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'AlertaBGA',
       theme: AppTheme.light(),
-      routerConfig: _router,
+      routerConfig: ref.watch(routerProvider),
       debugShowCheckedModeBanner: false,
       locale: const Locale('es', 'CO'),
       supportedLocales: const [Locale('es', 'CO'), Locale('es')],
