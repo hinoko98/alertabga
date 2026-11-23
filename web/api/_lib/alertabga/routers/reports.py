@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 
-from ..deps import CurrentUser, require_roles
+from ..citizens import CurrentCitizen, get_current_citizen
 from ..reports import client_ip, get_report_service
 from ..reports.schemas import Category, ReportCreated, ReportDetail, ReportIn, ReportSummary, TrackIn
 from ..reports.service import InvalidReport, NotFound, RateLimited, ReportService, Requester
@@ -34,10 +34,10 @@ def categories(svc: ReportService = Depends(get_report_service)) -> list[dict]:
 @router.post("/reports", response_model=ReportCreated, response_model_exclude_none=True,
              status_code=status.HTTP_201_CREATED)
 def create_report(data: ReportIn, request: Request,
-                  user: CurrentUser = Depends(require_roles("ciudadano")),
+                  user: CurrentCitizen = Depends(get_current_citizen),
                   x_device_id: str | None = Header(default=None),
                   svc: ReportService = Depends(get_report_service)) -> dict:
-    req = Requester(client_ip(request), _device(x_device_id), user.id, user.role, user.token)
+    req = Requester(client_ip(request), _device(x_device_id), user.id, user.role)
     return _create(svc, data, req)
 
 
@@ -49,9 +49,9 @@ def create_anonymous(data: ReportIn, request: Request,
 
 
 @router.get("/reports/mine", response_model=list[ReportSummary])
-def my_reports(user: CurrentUser = Depends(require_roles("ciudadano")),
+def my_reports(user: CurrentCitizen = Depends(get_current_citizen),
                svc: ReportService = Depends(get_report_service)):
-    return svc.mine(Requester(None, None, user.id, user.role, user.token))
+    return svc.mine(Requester(None, None, user.id, user.role))
 
 
 @router.post("/reports/track", response_model=ReportDetail)
@@ -66,9 +66,9 @@ def track(body: TrackIn, request: Request, x_device_id: str | None = Header(defa
 
 
 @router.get("/reports/{radicado}", response_model=ReportDetail)
-def report_detail(radicado: str, user: CurrentUser = Depends(require_roles("ciudadano")),
+def report_detail(radicado: str, user: CurrentCitizen = Depends(get_current_citizen),
                   svc: ReportService = Depends(get_report_service)):
     try:
-        return svc.detail_for_owner(radicado, Requester(None, None, user.id, user.role, user.token))
+        return svc.detail_for_owner(radicado, Requester(None, None, user.id, user.role))
     except NotFound as e:
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND) from e

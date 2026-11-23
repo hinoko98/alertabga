@@ -3,11 +3,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from conftest import make_token
+from conftest import CITIZEN_A as USER_A
+from conftest import CITIZEN_B as USER_B
+from conftest import citizen_auth, make_token
 from fakes import CAT_ID, CAT_INACTIVA, FakeRepository
-
-USER_A = "11111111-1111-1111-1111-111111111111"
-USER_B = "22222222-2222-2222-2222-222222222222"
 
 
 @pytest.fixture
@@ -16,21 +15,16 @@ def repo():
 
 
 @pytest.fixture
-def api(client, repo, monkeypatch):
-    from alertabga import deps
+def api(client, repo, citizen_db):
     from alertabga.reports import get_report_service
     from alertabga.reports.service import ReportService
 
-    roles = {USER_A: "ciudadano", USER_B: "ciudadano"}
-    monkeypatch.setattr(deps, "fetch_profile",
-                        lambda t, u: {"id": u, "role_code": roles.get(u, "operador"), "full_name": None,
-                                      "active": True})
     client.app.dependency_overrides[get_report_service] = lambda: ReportService(repo, "sal")
     return client
 
 
 def auth(user=USER_A):
-    return {"Authorization": f"Bearer {make_token(user)}"}
+    return citizen_auth(user)
 
 
 def body(**kw):
@@ -56,7 +50,7 @@ def test_anonimo_devuelve_token_y_guarda_solo_hash(api, repo):
     assert inc["source"] == "APP_ANONIMO" and inc["reporter_id"] is None
     assert inc["anon_token_hash"] == hashlib.sha256(token.encode()).hexdigest()
     assert token not in str(inc) and token not in str(repo.audits)
-    assert inc["location"] == "SRID=4326;POINT(-73.122 7.119)"
+    assert (inc["lat"], inc["lon"]) == (7.119, -73.122) and inc["out_of_scope"] is False
 
 
 def test_autenticado_sin_token_de_seguimiento(api, repo):
@@ -72,9 +66,21 @@ def test_reporte_autenticado_exige_token(api):
     assert api.post("/api/py/reports", json=body()).status_code == 401
 
 
-def test_personal_no_crea_reporte_ciudadano(api):
+def test_token_de_supabase_no_sirve_en_la_app(api):
+    # Los JWT de Supabase (personal del panel) no son sesiones ciudadanas.
+    r = api.post("/api/py/reports", json=body(), headers={"Authorization": f"Bearer {make_token(USER_A)}"})
+    assert r.status_code == 401
+
+
+def test_ciudadano_inexistente_401(api):
     r = api.post("/api/py/reports", json=body(), headers=auth("33333333-3333-3333-3333-333333333333"))
-    assert r.status_code == 403
+    assert r.status_code == 401
+
+
+def test_fuera_de_ambito_se_marca(api, repo):
+    r = anon(api, lat=4.71, lon=-74.07)
+    assert r.status_code == 201 and r.json()["out_of_scope"] is True
+    assert repo.incidents[r.json()["id"]]["out_of_scope"] is True
 
 
 def test_sexto_reporte_429(api):

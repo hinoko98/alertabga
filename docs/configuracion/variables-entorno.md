@@ -20,6 +20,8 @@ Ningún secreto se versiona. Las plantillas son `web/.env.example` y `mobile/env
 | `R2_PUBLIC_ENDPOINT_URL` | no | Solo local: host que verá el teléfono en la URL firmada (emulador: `http://10.0.2.2:54321/storage/v1/s3`) |
 | `R2_REGION` | no | `auto` en R2; `local` en Supabase local |
 | `RATE_LIMIT_SALT` | **no — secreto** | Sal aleatoria larga para las claves anónimas de rate limit y el hash de IP |
+| `CITIZEN_JWT_SECRET` | **no — secreto** | Firma las sesiones de la app ciudadana (32+ caracteres). Ver ADR 0003 |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | `SMTP_PASSWORD` es secreto | Correo del código de recuperación. Sin `SMTP_HOST` el código se escribe en el log de la API (solo local) |
 | `API_ALLOWED_ORIGINS` | no | CORS, separado por comas |
 
 ## Móvil (`mobile/env.json`, pasado con `--dart-define-from-file=env.json`)

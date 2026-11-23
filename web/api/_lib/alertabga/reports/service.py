@@ -41,6 +41,17 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def in_scope(scope: dict | None, lat: float, lon: float) -> bool:
+    """Caja envolvente de `app_settings.territorial_scope`. Sin ajuste configurado, todo está en ámbito."""
+    if not scope:
+        return True
+    try:
+        return (float(scope["min_lat"]) <= lat <= float(scope["max_lat"])
+                and float(scope["min_lon"]) <= lon <= float(scope["max_lon"]))
+    except (KeyError, TypeError, ValueError):
+        return True
+
+
 def rate_key(req: Requester, salt: str, scope: str = "report") -> str:
     if req.user_id:
         return f"{scope}:user:{req.user_id}"
@@ -71,7 +82,10 @@ class ReportService:
             "description": data.description,
             "additional_info": data.additional_info,
             "occurred_at": data.occurred_at.isoformat(),
-            "location": f"SRID=4326;POINT({data.lon} {data.lat})",
+            "category_name": category["name"],
+            "lat": data.lat,
+            "lon": data.lon,
+            "out_of_scope": not in_scope(self.repo.territorial_scope(), data.lat, data.lon),
             "accuracy_m": data.accuracy_m,
             "location_manual": data.location_manual,
             "address_text": data.address_text,
@@ -116,9 +130,9 @@ class ReportService:
         return self._detail(self.resolve(radicado, req))
 
     def mine(self, req: Requester) -> list[ReportSummary]:
-        assert req.user_id and req.token
+        assert req.user_id
         return [ReportSummary(radicado=r["radicado"], category=r["category"], status=r["status"],
-                              received_at=r["received_at"]) for r in self.repo.list_mine(req.token, req.user_id)]
+                              received_at=r["received_at"]) for r in self.repo.list_mine(req.user_id)]
 
     def _detail(self, inc: dict) -> ReportDetail:
         return ReportDetail(

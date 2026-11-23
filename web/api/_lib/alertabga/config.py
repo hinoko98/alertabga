@@ -25,6 +25,18 @@ class Settings(BaseSettings):
 
     rate_limit_salt: str = ""
 
+    # Sesiones de la app ciudadana (emitidas por esta API; ver ADR 0003)
+    citizen_jwt_secret: str = ""
+    citizen_access_ttl_s: int = 900
+    citizen_refresh_ttl_days: int = 30
+
+    # Correo saliente (código de recuperación). Sin SMTP_HOST se escribe en el log (solo local).
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str = "AlertaBGA <no-responder@alertabga.local>"
+
     mongodb_uri: str | None = None
     mongodb_db: str = "alertabga"
 

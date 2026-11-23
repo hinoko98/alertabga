@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
-from ..deps import CurrentUser, get_current_user
+from ..citizens import CurrentCitizen, optional_citizen
 from ..reports import client_ip, get_report_service
 from ..reports.evidence_service import EvidenceNotFound, EvidenceService, InvalidFile, NotUploaded, TooManyFiles
 from ..reports.service import NotFound, ReportService, Requester
@@ -28,18 +28,11 @@ def get_evidence_service(reports: ReportService = Depends(get_report_service)) -
     return EvidenceService(reports)
 
 
-def optional_user(authorization: str | None = Header(default=None)) -> CurrentUser | None:
-    """Con Bearer válido → ciudadano autenticado; sin Bearer → anónimo (usa tracking_token)."""
-    if not authorization:
-        return None
-    return get_current_user(authorization)
-
-
-def _requester(request: Request, user: CurrentUser | None, device: str | None) -> Requester:
+def _requester(request: Request, user: CurrentCitizen | None, device: str | None) -> Requester:
     ip = client_ip(request)
     if user is None:
         return Requester(ip, device)
-    return Requester(ip, device, user.id, user.role, user.token)
+    return Requester(ip, device, user.id, user.role)
 
 
 def _call(fn):
@@ -58,7 +51,7 @@ def _call(fn):
 
 
 @router.post("/presign")
-def presign(body: PresignIn, request: Request, user: CurrentUser | None = Depends(optional_user),
+def presign(body: PresignIn, request: Request, user: CurrentCitizen | None = Depends(optional_citizen),
             x_device_id: str | None = Header(default=None),
             svc: EvidenceService = Depends(get_evidence_service)) -> dict:
     req = _requester(request, user, x_device_id)
@@ -67,7 +60,7 @@ def presign(body: PresignIn, request: Request, user: CurrentUser | None = Depend
 
 @router.post("/{evidence_id}/confirm")
 def confirm(evidence_id: str, body: ConfirmIn, request: Request,
-            user: CurrentUser | None = Depends(optional_user),
+            user: CurrentCitizen | None = Depends(optional_citizen),
             x_device_id: str | None = Header(default=None),
             svc: EvidenceService = Depends(get_evidence_service)) -> dict:
     req = _requester(request, user, x_device_id)

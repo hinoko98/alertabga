@@ -41,15 +41,12 @@ def store():
 
 
 @pytest.fixture
-def api(client, repo, store, monkeypatch):
-    from alertabga import deps
+def api(client, repo, store, citizen_db):
     from alertabga.reports import get_report_service
     from alertabga.reports.evidence_service import EvidenceService
     from alertabga.reports.service import ReportService
     from alertabga.routers.evidence import get_evidence_service
 
-    monkeypatch.setattr(deps, "fetch_profile",
-                        lambda t, u: {"id": u, "role_code": "ciudadano", "full_name": None, "active": True})
     svc = ReportService(repo, "sal")
     client.app.dependency_overrides[get_report_service] = lambda: svc
     client.app.dependency_overrides[get_evidence_service] = lambda: EvidenceService(svc, store)
