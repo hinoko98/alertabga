@@ -241,6 +241,7 @@ export function IncidentDetail({ radicado }: { radicado: string }) {
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={d.status} />
           <PriorityBadge priority={d.priority} />
+          {d.demo && <span className="rounded bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600">Dato de demostración</span>}
           {d.out_of_scope && <span className="rounded bg-alert/15 px-2 py-0.5 text-xs font-bold text-alert">Fuera del ámbito territorial</span>}
         </div>
       </div>

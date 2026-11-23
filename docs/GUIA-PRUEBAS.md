@@ -80,7 +80,9 @@ Debe terminar con 8 líneas **OK** (la última es el E2E del backend; necesita e
 
 ## 3. Probar el panel web (manual)
 
-**Datos de demostración** (opcional, para ver el panel con información):
+**De dónde salen los datos:** la bandeja, el panel principal, el mapa y las estadísticas operativas muestran **los reportes reales que envía la app móvil** (MongoDB `incidents`), y se actualizan solos cada 20-30 s. Los datos importados de datos.gov.co (127.754 delitos 2010–2021 y la estadística oficial 2016–2026) aparecen como **referencia histórica** en el mapa de calor y en Estadísticas, siempre etiquetados con su fuente.
+
+**Datos de demostración** (opcional, solo si la app aún no ha enviado reportes; se marcan con la etiqueta DEMO y no se mezclan con los reales):
 ```powershell
 cd web; .\.venv\Scripts\python scripts\sembrar_demo.py          # 80 reportes BGA-DEMO-* de los últimos 45 días
 .\.venv\Scripts\python scripts\sembrar_demo.py --borrar             # quitarlos

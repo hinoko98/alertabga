@@ -57,6 +57,8 @@ export interface IncidentRow {
   assigned_to: string | null;
   assigned_name: string | null;
   out_of_scope: boolean;
+  /** Sembrado con scripts/sembrar_demo.py; no es un reporte real de la app. */
+  demo?: boolean;
 }
 
 export interface Page<T> {

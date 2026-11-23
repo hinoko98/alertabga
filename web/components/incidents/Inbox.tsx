@@ -170,6 +170,7 @@ export function Inbox() {
                           onClick={(e) => e.stopPropagation()}>
                           {r.radicado}
                         </Link>
+                        {r.demo && <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600" title="Dato de demostración, no viene de la app">DEMO</span>}
                         {r.out_of_scope && <span className="ml-2 rounded bg-alert/15 px-1.5 py-0.5 text-[10px] font-bold text-alert">FUERA DE ÁMBITO</span>}
                       </td>
                       <td className="px-4 py-3">
@@ -180,7 +181,7 @@ export function Inbox() {
                       <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
                       <td className="px-4 py-3"><PriorityBadge priority={r.priority} /></td>
                       <td className="px-4 py-3 text-ink">{r.assigned_name ?? <span className="text-muted">Sin asignar</span>}</td>
-                      <td className="px-4 py-3 text-xs text-muted">{r.source === "APP_ANONIMO" ? "Anónimo" : "Con cuenta"}</td>
+                      <td className="px-4 py-3 text-xs text-muted">{r.demo ? "Demostración" : r.source === "APP_ANONIMO" ? "App · anónimo" : "App · con cuenta"}</td>
                     </tr>
                   ))}
                 </tbody>

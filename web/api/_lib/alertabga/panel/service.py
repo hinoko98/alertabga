@@ -130,7 +130,7 @@ class PanelService:
             "received_at": _iso(d["received_at"]), "occurred_at": _iso(d.get("occurred_at")),
             "address_text": d.get("address_text"), "lat": lat, "lon": lon,
             "assigned_to": d.get("assigned_to"), "assigned_name": d.get("assigned_name"),
-            "out_of_scope": bool(d.get("out_of_scope")),
+            "out_of_scope": bool(d.get("out_of_scope")), "demo": bool(d.get("demo")),
         }
 
     def list_incidents(self, f: Filters, actor: Actor, page: int = 1, page_size: int = 25) -> dict:
