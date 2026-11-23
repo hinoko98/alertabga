@@ -147,6 +147,7 @@ Descarga de datos.gov.co a `data\raw\` (ignorado por git), limpia con PySpark y 
 ## 6. Problemas frecuentes
 | Síntoma | Solución |
 |---|---|
+| `EADDRINUSE ... :4000` al hacer `npm run dev` | Ya hay un panel corriendo (p. ej. el que abrió `iniciar-entorno.ps1` en una ventana minimizada): use ese en http://localhost:4000, o ciérrelo con `Get-NetTCPConnection -LocalPort 4000 -State Listen \| % { Stop-Process -Id $_.OwningProcess -Force }` |
 | El panel tarda en abrir la primera vez | Es la compilación del modo desarrollo; espere o use `npm run preview` |
 | Mongo no arranca en 27017 | Ya hay un MongoDB local en ese puerto; el proyecto usa 27018 |
 | Build Android falla con "incremental caches" | Ya está resuelto con `kotlin.incremental=false`. Si persiste: `flutter clean` |
