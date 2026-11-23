@@ -8,7 +8,7 @@ La bandeja de operadores del panel web llega en la Fase 3.
 |---|---|---|
 | API FastAPI + MongoDB | **Docker** (`docker compose up -d --build`) | Cuentas ciudadanas, reportes, historial, evidencias, histórico oficial |
 | Supabase local | Docker, vía `npx supabase@2 start` | Personal del panel, categorías, ajustes, almacenamiento S3 de fotos |
-| Panel web Next.js | `npm run dev -- -p 4000` (fuera de Docker) | Supabase para el login del personal; la API para lo demás |
+| Panel web Next.js | `npm run dev` en `web\` → http://localhost:4000 (fuera de Docker) | Supabase para el login del personal; la API para lo demás |
 | App Android | `flutter run` en emulador o teléfono (no puede ir en Docker) | **Solo habla con la API**; no usa Supabase |
 
 ---
@@ -24,7 +24,7 @@ cd web;       python -m venv .venv; .\.venv\Scripts\pip install -r requirements.
 cd analytics; python -m venv .venv; .\.venv\Scripts\pip install -r requirements.txt -r requirements-dev.txt; cd ..
 cd mobile;    flutter pub get; cd ..
 ```
-Luego cree `web\.env.local` desde `web\.env.example` con los valores que imprime `npx supabase@2 start`, y `mobile\env.json` desde `mobile\env.example.json`.
+Luego cree `web\.env.local` desde `web\.env.example` con los valores que imprime `npx supabase@2 start`,. La app móvil no necesita archivo de configuración.
 
 ---
 
@@ -32,7 +32,7 @@ Luego cree `web\.env.local` desde `web\.env.example` con los valores que imprime
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\iniciar-entorno.ps1
 ```
-Inicia Docker (si hace falta), Supabase local, el backend en Docker (MongoDB :27018 + API :8000), hace `adb reverse` si hay un emulador abierto y abre el dashboard (:4000). Con `-SinWeb` no abre el dashboard.
+Inicia Docker (si hace falta), Supabase local, el backend en Docker (MongoDB :27018 + API :8000), deja listos los usuarios de prueba del panel y abre el dashboard (:4000) ya compilado. Con `-SinWeb` no abre el dashboard.
 
 Solo el backend: `docker compose up -d --build` (requiere Supabase arriba para categorías y fotos). Registros: `docker compose logs -f api`.
 
@@ -45,7 +45,20 @@ Solo el backend: `docker compose up -d --build` (requiere Supabase arriba para c
 | Correos de prueba del **personal** (Supabase) | http://127.0.0.1:54324 |
 | Código de recuperación de **ciudadanos** (local) | `docker compose logs api` (busque "Su código es") |
 
-> El puerto 3000 está reservado por Windows/Hyper-V en esta máquina; por eso el dashboard usa el 4000.
+### Credenciales del panel web (solo local)
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Administrador | `admin.local@example.com` | `Admin-Local-2026` |
+| Supervisor | `supervisor.prueba@example.com` | `Supervisor-2026` |
+| Operador | `operador.prueba@example.com` | `Operador-2026` |
+| Ciudadano (debe ver "Sin acceso") | `ciudadano.prueba@example.com` | `Clave-Segura-2026` |
+
+Si alguna no funciona (p. ej. tras `npx supabase@2 db reset`): `powershell -ExecutionPolicy Bypass -File scripts\usuarios-demo.ps1`.
+
+### Velocidad del panel
+- `npm run dev` (desarrollo) compila cada página **la primera vez** que se abre: 10-25 s. Después, ~0,3 s. El script de arranque las compila por adelantado.
+- `npm run preview` (compilación de producción, ~30 s una vez): todas las páginas cargan en menos de 0,3 s. Úselo para demostraciones.
+- Abra **http://localhost:4000** (no la IP de red) para que la recarga en vivo funcione.
 
 ## 2. Ejecutar todas las pruebas automáticas
 ```powershell
@@ -66,16 +79,11 @@ Debe terminar con 8 líneas **OK** (la última es el E2E del backend; necesita e
 
 ## 3. Probar el dashboard web (manual)
 
-1. **Crear usuarios de prueba** (solo local):
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\crear-usuario-local.ps1 -Email admin.local@example.com -Password "Admin-Local-2026" -Rol administrador -Nombre "Administrador Local"
-   powershell -ExecutionPolicy Bypass -File scripts\crear-usuario-local.ps1 -Email ciudadano.prueba@example.com -Password "Clave-Segura-2026" -Rol ciudadano -Nombre "Ciudadano Prueba"
-   ```
-   (Si ya existen, el script responde que el correo está registrado. Es normal.)
+1. Asegúrese de tener los usuarios de prueba (tabla de credenciales arriba; el script de arranque los crea).
 2. Abra http://localhost:4000. Sin sesión, debe redirigir a **/login**.
 3. Ingrese como **administrador**. Verá "Estado de la plataforma" con las tarjetas:
-   - API Python, Autenticación (JWT → API), Supabase, MongoDB y Realtime en **Operativo**.
-   - Cloudflare R2 en **Pendiente de configurar** (se completa al crear el bucket).
+   - API Python, Autenticación y rol, Supabase, Almacenamiento de evidencias y MongoDB en **Operativo**.
+   Repita con el **operador** y el **supervisor**: también entran.
 4. Cierre sesión e ingrese como **ciudadano** de Supabase. Debe ver "Sin acceso al panel institucional".
    (Los ciudadanos de la app **no** existen en Supabase: se registran desde el teléfono y viven en MongoDB.)
 5. **Histórico institucional** (con el token del admin), desde http://localhost:4000/api/py/docs → `GET /historico/resumen`. Devuelve dos fuentes etiquetadas:
@@ -89,22 +97,18 @@ Debe terminar con 8 líneas **OK** (la última es el E2E del backend; necesita e
 ### Opción A — Emulador (recomendada)
 ```powershell
 flutter emulators --launch Pixel_7
-adb reverse tcp:54321 tcp:54321     # necesario para subir fotos (la URL firmada usa 127.0.0.1:54321)
 cd mobile
-flutter run --dart-define-from-file=env.json        # r = hot reload, q = salir
+flutter run          # r = hot reload, q = salir
 ```
-`mobile\env.json` solo contiene `API_BASE_URL` (`http://10.0.2.2:8000/api/py`, el PC visto desde el emulador). La app no lleva claves de ninguna base de datos.
+No requiere archivos ni comandos extra: en modo debug la app usa la API local vista desde el emulador
+(`http://10.0.2.2:8000/api/py`) y la API firma las subidas de fotos para ese mismo host. La app no lleva claves de ninguna base de datos.
 
 ### Opción B — Teléfono físico por USB
 1. Active "Depuración USB" en el teléfono y conéctelo (`adb devices` debe listarlo).
-2. Redirija los puertos al PC:
-   ```powershell
+2. ```powershell
    adb reverse tcp:8000 tcp:8000
    adb reverse tcp:54321 tcp:54321
-   ```
-3. Cree `mobile\env.phone.json` con `{"API_BASE_URL": "http://127.0.0.1:8000/api/py"}` y ejecute:
-   ```powershell
-   cd mobile; flutter run --dart-define-from-file=env.phone.json
+   cd mobile; flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/py
    ```
 
 ### Recorrido de prueba
@@ -117,7 +121,6 @@ flutter run --dart-define-from-file=env.json        # r = hot reload, q = salir
 6. **Configuración** (engranaje): privacidad, borrar reportes anónimos guardados, estado de conexión, emergencias, cerrar sesión.
 
 Pruebe también: marcar un punto fuera de Bucaramanga bloquea el envío; dos toques rápidos en "Enviar" crean **un solo** reporte.
-Si aparece "Configuración incompleta", faltó `--dart-define-from-file=env.json`.
 
 ### Ver los datos en MongoDB
 ```powershell
@@ -128,7 +131,7 @@ docker exec -it alertabga_mongo mongosh alertabga --eval "db.citizens.find({}, {
 ### Instalar un APK sin `flutter run`
 ```powershell
 cd mobile
-flutter build apk --debug --dart-define-from-file=env.json
+flutter build apk --debug
 adb install -r build\app\outputs\flutter-apk\app-debug.apk
 ```
 
@@ -144,12 +147,12 @@ Descarga de datos.gov.co a `data\raw\` (ignorado por git), limpia con PySpark y 
 ## 6. Problemas frecuentes
 | Síntoma | Solución |
 |---|---|
-| `EACCES` al iniciar Next en 3000 | Use `npm run dev -- -p 4000` |
+| El panel tarda en abrir la primera vez | Es la compilación del modo desarrollo; espere o use `npm run preview` |
 | Mongo no arranca en 27017 | Ya hay un MongoDB local en ese puerto; el proyecto usa 27018 |
 | Build Android falla con "incremental caches" | Ya está resuelto con `kotlin.incremental=false`. Si persiste: `flutter clean` |
-| Tarjeta Realtime en "Con fallas" | Revise que Supabase esté arriba (`npx supabase@2 status`) |
-| La app dice "No hay conexión con el servidor" | `docker compose ps` (api debe estar *healthy*); en teléfono físico, repita `adb reverse` |
-| Las fotos no suben ("no se pudieron enviar") | Falta `adb reverse tcp:54321 tcp:54321` o Supabase está apagado |
+| Tarjeta Supabase en "Con fallas" | Revise que Supabase esté arriba (`npx supabase@2 status`) |
+| La app dice "No hay conexión con el servidor" | `docker compose ps` (api debe estar *healthy*); en teléfono físico, repita los `adb reverse` |
+| Las fotos no suben ("no se pudieron enviar") | Supabase está apagado, o la API es antigua: `docker compose up -d --build api` |
 | Cambié código de la API | `docker compose up -d --build api` |
 | Quiero empezar de cero la base local | `npx supabase@2 db reset` (borra usuarios y datos locales) |
 | Detener todo | Cierre la ventana de Next; `docker compose down`; `npx supabase@2 stop` |

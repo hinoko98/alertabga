@@ -54,3 +54,31 @@ def test_sin_configuracion_lanza(monkeypatch):
     storage.reset_clients()
     with pytest.raises(storage.StorageNotConfigured):
         storage.presign_put("incidents/x/y.jpg", "image/jpeg", 1000)
+
+
+@pytest.fixture
+def s3_host_env(s3_env, monkeypatch):
+    from alertabga.config import get_settings
+
+    monkeypatch.setenv("R2_PUBLIC_ENDPOINT_URL", "http://{host}:54321/storage/v1/s3")
+    get_settings.cache_clear()
+    s3_env.reset_clients()
+    return s3_env
+
+
+@pytest.mark.parametrize("host", ["10.0.2.2", "127.0.0.1", "localhost", "192.168.1.20"])
+def test_endpoint_publico_con_host_de_la_peticion(s3_host_env, host):
+    """En desarrollo la URL firmada usa el host por el que el cliente llegó (emulador: 10.0.2.2)."""
+    u = urlparse(s3_host_env.presign_put("incidents/x/y.jpg", "image/jpeg", 1000, host=host))
+    assert u.netloc == f"{host}:54321"
+
+
+@pytest.mark.parametrize("host", [None, "", "evil.com/x", "a b", "x" * 300, "[::1]"])
+def test_host_invalido_usa_127(s3_host_env, host):
+    u = urlparse(s3_host_env.presign_put("incidents/x/y.jpg", "image/jpeg", 1000, host=host))
+    assert u.netloc == "127.0.0.1:54321"
+
+
+def test_endpoint_fijo_ignora_host(s3_env):
+    u = urlparse(s3_env.presign_put("incidents/x/y.jpg", "image/jpeg", 1000, host="evil.com"))
+    assert u.netloc == "10.0.2.2:54321"

@@ -1,17 +1,28 @@
-# alertabga
+# AlertaBGA — app ciudadana (Flutter)
 
-AlertaBGA - reporte ciudadano de incidentes
+Reporte ciudadano de incidentes de seguridad en Bucaramanga. La app habla **solo** con la API AlertaBGA;
+no contiene claves de bases de datos (ADR 0003).
 
-## Getting Started
+## Ejecutar
 
-This project is a starting point for a Flutter application.
+Con el backend arriba (`docker compose up -d` en la raíz, o `scripts\iniciar-entorno.ps1`) y un emulador abierto:
 
-A few resources to get you started if this is your first Flutter project:
+```powershell
+flutter run
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Nada más: en modo debug la app usa `http://10.0.2.2:8000/api/py` (el PC visto desde el emulador) y las fotos
+se suben con URLs firmadas para ese mismo host.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Otros destinos
+| Caso | Comando |
+|---|---|
+| Teléfono físico por USB | `adb reverse tcp:8000 tcp:8000; adb reverse tcp:54321 tcp:54321` y `flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/py` |
+| Teléfono en la misma red Wi-Fi | `flutter run --dart-define=API_BASE_URL=http://<IP-del-PC>:8000/api/py` (exponga los puertos en el firewall) |
+| Release / producción | `flutter build apk --release --dart-define=API_BASE_URL=https://<dominio>/api/py` (obligatorio en release) |
+
+## Pruebas
+```powershell
+flutter analyze
+flutter test
+```

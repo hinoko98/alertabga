@@ -55,7 +55,8 @@ def presign(body: PresignIn, request: Request, user: CurrentCitizen | None = Dep
             x_device_id: str | None = Header(default=None),
             svc: EvidenceService = Depends(get_evidence_service)) -> dict:
     req = _requester(request, user, x_device_id)
-    return _call(lambda: svc.presign(body.radicado, body.mime, body.size, req, body.tracking_token))
+    host = request.url.hostname  # host por el que llegó el cliente (solo aplica con `{host}` en desarrollo)
+    return _call(lambda: svc.presign(body.radicado, body.mime, body.size, req, body.tracking_token, host))
 
 
 @router.post("/{evidence_id}/confirm")

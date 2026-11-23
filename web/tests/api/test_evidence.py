@@ -9,6 +9,7 @@ class FakeStorage:
         self.objects: dict[str, dict] = {}
         self.deleted: list[str] = []
         self.signed: list[str] = []
+        self.hosts: list[str | None] = []
 
     def extension_for(self, mime):
         from alertabga.storage import extension_for
@@ -18,8 +19,9 @@ class FakeStorage:
         from alertabga.storage import validate
         validate(mime, size)
 
-    def presign_put(self, key, mime, size):
+    def presign_put(self, key, mime, size, host=None):
         self.signed.append(key)
+        self.hosts.append(host)
         return f"http://s3.test/evidencias/{key}?X-Amz-Signature=abc"
 
     def head(self, key):
@@ -68,6 +70,13 @@ def confirm(api, rep, evidence_id, token="__rep__"):
     tok = rep["tracking_token"] if token == "__rep__" else token
     return api.post(f"/api/py/evidence/{evidence_id}/confirm",
                     json={"radicado": rep["radicado"], "tracking_token": tok})
+
+
+def test_presign_firma_con_el_host_de_la_peticion(api, anon_report, store):
+    api.post("/api/py/evidence/presign", headers={"Host": "10.0.2.2:8000"},
+             json={"radicado": anon_report["radicado"], "mime": "image/jpeg", "size": 10,
+                   "tracking_token": anon_report["tracking_token"]})
+    assert store.hosts == ["10.0.2.2"]
 
 
 def test_presign_anonimo_ok(api, anon_report, repo):

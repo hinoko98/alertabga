@@ -38,7 +38,7 @@ class MissingConfigApp extends StatelessWidget {
           child: Center(
             child: Text(
               'Configuración incompleta: ${missing.join(', ')}.\n'
-              'Ejecute con --dart-define-from-file=env.json',
+              'Compile con --dart-define=API_BASE_URL=https://...',
               textAlign: TextAlign.center,
             ),
           ),

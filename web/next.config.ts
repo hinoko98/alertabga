@@ -1,19 +1,21 @@
 import type { NextConfig } from "next";
 
-const isDev = process.env.NODE_ENV === "development";
+// En Vercel la API es la función Python api/index.py; en local (dev o `npm run preview`) es uvicorn :8000.
+const onVercel = Boolean(process.env.VERCEL);
 
 const nextConfig: NextConfig = {
+  // Permite la recarga en vivo (HMR) al abrir el panel por IP local en vez de localhost.
+  allowedDevOrigins: ["127.0.0.1", "192.168.56.1"],
   turbopack: {
     rules: {
       "*.css": { loaders: ["@tailwindcss/turbopack"], as: "*.css" },
     },
   },
-  // FastAPI: en desarrollo corre en uvicorn :8000; en Vercel es la función Python api/index.py
   async rewrites() {
     return [
       {
         source: "/api/py/:path*",
-        destination: isDev ? "http://127.0.0.1:8000/api/py/:path*" : "/api/",
+        destination: onVercel ? "/api/" : "http://127.0.0.1:8000/api/py/:path*",
       },
     ];
   },

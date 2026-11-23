@@ -30,10 +30,10 @@ services:
     environment:
       MONGODB_URI: mongodb://mongo:27017
       SUPABASE_URL: http://host.docker.internal:54321
-      # La API consulta el almacenamiento por la red de Docker, pero firma las URL con el host
-      # que ven el navegador y el teléfono (emulador: `adb reverse tcp:54321 tcp:54321`).
+      # La API consulta el almacenamiento por la red de Docker, pero firma las URL de subida con el
+      # host por el que llegó el cliente ({host}): 10.0.2.2 en el emulador, localhost en el navegador.
       R2_ENDPOINT_URL: http://host.docker.internal:54321/storage/v1/s3
-      R2_PUBLIC_ENDPOINT_URL: http://127.0.0.1:54321/storage/v1/s3
+      R2_PUBLIC_ENDPOINT_URL: http://{host}:54321/storage/v1/s3
       API_ALLOWED_ORIGINS: http://localhost:4000,http://127.0.0.1:4000
     extra_hosts:
       - "host.docker.internal:host-gateway"

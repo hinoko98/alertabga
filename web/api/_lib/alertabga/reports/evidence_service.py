@@ -15,7 +15,7 @@ ACTIVE = ("PENDIENTE", "CONFIRMADA")
 class Storage(Protocol):
     def extension_for(self, mime: str) -> str: ...
     def validate(self, mime: str, size: int) -> None: ...
-    def presign_put(self, key: str, mime: str, size: int) -> str: ...
+    def presign_put(self, key: str, mime: str, size: int, host: str | None = None) -> str: ...
     def head(self, key: str) -> dict | None: ...
     def delete(self, key: str) -> None: ...
 
@@ -43,7 +43,7 @@ class EvidenceService:
         self.storage = storage
 
     def presign(self, radicado: str, mime: str, size: int, req: Requester,
-                tracking_token: str | None = None) -> dict:
+                tracking_token: str | None = None, public_host: str | None = None) -> dict:
         inc = self.reports.resolve(radicado, req, tracking_token)  # NotFound si no es suyo
         try:
             self.storage.validate(mime, size)
@@ -54,7 +54,7 @@ class EvidenceService:
 
         evidence_id = str(uuid.uuid4())
         key = f"incidents/{inc['id']}/{evidence_id}.{self.storage.extension_for(mime)}"
-        url = self.storage.presign_put(key, mime, size)
+        url = self.storage.presign_put(key, mime, size, host=public_host)
         self.repo.insert_evidence({
             "id": evidence_id, "incident_id": inc["id"], "storage_key": key, "mime_type": mime,
             "size_bytes": size, "uploaded_by": req.user_id if tracking_token is None else None,
