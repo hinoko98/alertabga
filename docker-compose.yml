@@ -1,13 +1,47 @@
-# Puerto 27018 para no chocar con un MongoDB local instalado en 27017.
-# Servicios locales complementarios. Supabase se levanta aparte con `npx supabase start`.
+# Backend local de AlertaBGA: MongoDB + API FastAPI.
+#   docker compose up -d --build
+# Supabase (personal del panel, categorías, ajustes, almacenamiento S3 de evidencias) se levanta aparte
+# con `npx supabase start` (lo hace scripts/iniciar-entorno.ps1). La web (`npm run dev`) y la app móvil
+# (`flutter run`) se ejecutan fuera de Docker y usan esta API.
 services:
   mongo:
     image: mongo:7
     container_name: alertabga_mongo
+    # 27018 para no chocar con un MongoDB local instalado en 27017.
     ports:
       - "127.0.0.1:27018:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.api
+    container_name: alertabga_api
+    # Secretos locales desde web/.env.local; las URL se ajustan para la red de Docker.
+    env_file:
+      - ./web/.env.local
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      SUPABASE_URL: http://host.docker.internal:54321
+      # La API consulta el almacenamiento por la red de Docker, pero firma las URL con el host
+      # que ven el navegador y el teléfono (emulador: `adb reverse tcp:54321 tcp:54321`).
+      R2_ENDPOINT_URL: http://host.docker.internal:54321/storage/v1/s3
+      R2_PUBLIC_ENDPOINT_URL: http://127.0.0.1:54321/storage/v1/s3
+      API_ALLOWED_ORIGINS: http://localhost:4000,http://127.0.0.1:4000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      mongo:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

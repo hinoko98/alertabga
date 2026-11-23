@@ -1,48 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../auth/data/auth_repository.dart';
+import '../../core/network/api_client.dart';
 import '../auth/presentation/auth_widgets.dart';
 import '../auth/presentation/validators.dart';
 
 class Profile {
-  const Profile({required this.fullName, required this.phone, required this.notify});
+  const Profile({required this.email, required this.fullName, required this.phone, required this.notify});
 
+  final String email;
   final String fullName;
   final String phone;
   final bool notify;
+
+  factory Profile.fromJson(Map<String, dynamic> j) => Profile(
+        email: (j['email'] as String?) ?? '',
+        fullName: (j['full_name'] as String?) ?? '',
+        phone: (j['phone'] as String?) ?? '',
+        notify: (j['notify_status_changes'] as bool?) ?? false,
+      );
 }
 
-/// Perfil propio vía Supabase con RLS (solo puede leer/editar su fila; rol y estado están protegidos).
+/// Perfil propio a través de la API (la cuenta vive en MongoDB; ADR 0003).
 class ProfileRepository {
-  ProfileRepository(this._sb);
+  ProfileRepository(this._api);
 
-  final SupabaseClient _sb;
+  final ApiClient _api;
 
-  Future<Profile> load(String userId) async {
-    final r = await _sb.from('profiles').select('full_name, phone, notify_status_changes').eq('id', userId).single();
-    return Profile(
-      fullName: (r['full_name'] as String?) ?? '',
-      phone: (r['phone'] as String?) ?? '',
-      notify: (r['notify_status_changes'] as bool?) ?? false,
-    );
-  }
+  Future<Profile> load() async => Profile.fromJson(await _api.account());
 
-  Future<void> save(String userId, Profile p) => _sb.from('profiles').update({
-        'full_name': p.fullName.trim().isEmpty ? null : p.fullName.trim(),
+  Future<Profile> save(Profile p) async => Profile.fromJson(await _api.updateAccount({
+        'full_name': p.fullName.trim(),
         'phone': p.phone.trim().isEmpty ? null : p.phone.trim(),
         'notify_status_changes': p.notify,
-      }).eq('id', userId);
+      }));
 }
 
-final profileRepositoryProvider = Provider<ProfileRepository>((ref) => ProfileRepository(Supabase.instance.client));
+final profileRepositoryProvider = Provider<ProfileRepository>((ref) => ProfileRepository(ref.watch(apiClientProvider)));
 
-final profileProvider = FutureProvider.autoDispose<Profile>((ref) {
-  final id = ref.watch(sessionStateProvider).userId;
-  if (id == null) throw StateError('Sin sesión');
-  return ref.watch(profileRepositoryProvider).load(id);
-});
+final profileProvider = FutureProvider.autoDispose<Profile>((ref) => ref.watch(profileRepositoryProvider).load());
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -89,8 +85,9 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final id = ref.read(sessionStateProvider).userId!;
-      await ref.read(profileRepositoryProvider).save(id, Profile(fullName: _name.text, phone: _phone.text, notify: _notify));
+      await ref
+          .read(profileRepositoryProvider)
+          .save(Profile(email: widget.initial.email, fullName: _name.text, phone: _phone.text, notify: _notify));
       messenger.showSnackBar(const SnackBar(content: Text('Perfil actualizado')));
     } catch (_) {
       messenger.showSnackBar(const SnackBar(content: Text('No se pudo guardar. Intente de nuevo.')));
@@ -101,7 +98,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
 
   @override
   Widget build(BuildContext context) {
-    final email = ref.watch(sessionStateProvider).email ?? '';
+    final email = widget.initial.email;
     return Form(
       key: _form,
       child: ListView(

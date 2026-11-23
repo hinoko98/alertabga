@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/storage/secure_store.dart';
+import '../../core/auth/session_store.dart';
 import '../auth/data/auth_repository.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -29,7 +30,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(sessionStateProvider);
+    final session = ref.watch(sessionStoreProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración')),
       body: ListView(

@@ -22,7 +22,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _accepted = false;
   bool _busy = false;
   String? _error;
-  bool _checkEmail = false;
 
   @override
   void dispose() {
@@ -43,15 +42,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       _error = null;
     });
     try {
-      final signedIn = await ref
-          .read(authRepositoryProvider)
-          .signUp(email: _email.text, password: _password.text, fullName: _name.text);
-      if (!mounted) return;
-      if (signedIn) {
-        context.go('/home');
-      } else {
-        setState(() => _checkEmail = true);
-      }
+      await ref.read(authRepositoryProvider).signUp(email: _email.text, password: _password.text, fullName: _name.text);
+      if (mounted) context.go('/home');
     } catch (e) {
       setState(() => _error = authErrorMessage(e));
     } finally {
@@ -61,13 +53,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_checkEmail) {
-      return const AuthScaffold(
-        title: 'Crear cuenta',
-        child: InfoBox('Le enviamos un correo para confirmar su cuenta. Abra el enlace desde este teléfono.',
-            icon: Icons.mark_email_read_outlined),
-      );
-    }
     return AuthScaffold(
       title: 'Crear cuenta',
       child: Form(

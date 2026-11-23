@@ -1,63 +1,42 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/domain/report_models.dart';
 import '../../../core/network/api_client.dart';
 
-/// Lecturas de seguimiento. Los datos siempre vienen de la API (que filtra notas internas);
-/// Realtime solo avisa que algo cambió.
+/// Lecturas de seguimiento, siempre desde la API (que filtra notas internas).
 class TrackingRepository {
-  TrackingRepository(this._api, [this._supabase]);
+  TrackingRepository(this._api);
 
   final ApiClient _api;
-  final SupabaseClient? _supabase;
 
   Future<List<ReportSummary>> mine() => _api.myReports();
   Future<ReportDetail> detail(String radicado) => _api.reportDetail(radicado);
   Future<ReportDetail> track(String radicado, String token) => _api.track(radicado, token);
-
-  /// Emite cada vez que cambia el incidente o llega un mensaje institucional (RLS filtra a los propios).
-  Stream<void> changes(String incidentId) {
-    final sb = _supabase;
-    if (sb == null) return const Stream.empty();
-    late final RealtimeChannel channel;
-    final ctrl = StreamController<void>(onCancel: () => sb.removeChannel(channel));
-    channel = sb
-        .channel('incident-$incidentId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'incidents',
-          filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'id', value: incidentId),
-          callback: (_) => ctrl.add(null),
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'institutional_messages',
-          filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'incident_id', value: incidentId),
-          callback: (_) => ctrl.add(null),
-        )
-        .subscribe();
-    return ctrl.stream;
-  }
 }
 
-final trackingRepositoryProvider = Provider<TrackingRepository>(
-    (ref) => TrackingRepository(ref.watch(apiClientProvider), Supabase.instance.client));
+final trackingRepositoryProvider = Provider<TrackingRepository>((ref) => TrackingRepository(ref.watch(apiClientProvider)));
+
+/// Intervalo de actualización automática mientras la pantalla de seguimiento está abierta.
+const trackingPollInterval = Duration(seconds: 30);
 
 final myReportsProvider = FutureProvider.autoDispose<List<ReportSummary>>((ref) => ref.watch(trackingRepositoryProvider).mine());
 
-/// Detalle del reporte propio, que se recarga solo cuando Realtime avisa un cambio.
+/// Programa una recarga periódica del proveedor mientras alguien lo escuche.
+void _poll(Ref ref) {
+  final timer = Timer(trackingPollInterval, ref.invalidateSelf);
+  ref.onDispose(timer.cancel);
+}
+
+/// Detalle del reporte propio; se actualiza solo cada 30 s (o al deslizar).
 final ownReportProvider = FutureProvider.autoDispose.family<ReportDetail, String>((ref, radicado) async {
-  final repo = ref.watch(trackingRepositoryProvider);
-  final detail = await repo.detail(radicado);
-  final sub = repo.changes(detail.id).listen((_) => ref.invalidateSelf());
-  ref.onDispose(sub.cancel);
-  return detail;
+  _poll(ref);
+  return ref.watch(trackingRepositoryProvider).detail(radicado);
 });
 
-final anonymousReportProvider =
-    FutureProvider.autoDispose.family<ReportDetail, (String, String)>((ref, args) => ref.watch(trackingRepositoryProvider).track(args.$1, args.$2));
+/// Reporte anónimo con su código; misma actualización periódica.
+final anonymousReportProvider = FutureProvider.autoDispose.family<ReportDetail, (String, String)>((ref, args) async {
+  _poll(ref);
+  return ref.watch(trackingRepositoryProvider).track(args.$1, args.$2);
+});

@@ -9,8 +9,7 @@ import '../../auth/presentation/auth_widgets.dart';
 import '../data/tracking_repository.dart';
 import '../widgets/status_timeline.dart';
 
-/// Seguimiento de un reporte. Autenticado: se actualiza en tiempo real.
-/// Anónimo (con código): deslizar hacia abajo para refrescar.
+/// Seguimiento de un reporte: se actualiza solo cada 30 s y al deslizar hacia abajo.
 class TrackingScreen extends ConsumerWidget {
   const TrackingScreen.own({super.key, required this.radicado}) : token = null;
   const TrackingScreen.anonymous({super.key, required this.radicado, required String this.token});
@@ -33,7 +32,7 @@ class TrackingScreen extends ConsumerWidget {
           error: (e, _) => ListView(padding: const EdgeInsets.all(16), children: [
             ErrorBox(ApiError.from(e).isNotFound ? 'Radicado o código no válido.' : ApiError.from(e).message),
           ]),
-          data: (d) => _DetailView(detail: d, live: tok == null),
+          data: (d) => _DetailView(detail: d),
         ),
       ),
     );
@@ -41,10 +40,9 @@ class TrackingScreen extends ConsumerWidget {
 }
 
 class _DetailView extends StatelessWidget {
-  const _DetailView({required this.detail, required this.live});
+  const _DetailView({required this.detail});
 
   final ReportDetail detail;
-  final bool live;
 
   @override
   Widget build(BuildContext context) {
@@ -92,9 +90,9 @@ class _DetailView extends StatelessWidget {
         Row(children: [
           const Text('Historial', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
           const Spacer(),
-          Icon(live ? Icons.sensors : Icons.swipe_down_alt, size: 16, color: BrandColors.slate500),
+          const Icon(Icons.autorenew, size: 16, color: BrandColors.slate500),
           const SizedBox(width: 4),
-          Text(live ? 'En tiempo real' : 'Deslice para actualizar', style: const TextStyle(color: BrandColors.slate500, fontSize: 12)),
+          const Text('Se actualiza cada 30 s', style: TextStyle(color: BrandColors.slate500, fontSize: 12)),
         ]),
         const SizedBox(height: 12),
         StatusTimeline(entries: d.timeline),

@@ -117,20 +117,16 @@ void main() {
 
   group('authRedirect', () {
     test('sin sesión no entra a rutas privadas', () {
-      expect(authRedirect(path: '/home', signedIn: false, recovering: false), '/');
-      expect(authRedirect(path: '/reports/BGA-2026-000001', signedIn: false, recovering: false), '/');
+      expect(authRedirect(path: '/home', signedIn: false), '/');
+      expect(authRedirect(path: '/reports/BGA-2026-000001', signedIn: false), '/');
     });
     test('sin sesión puede reportar y consultar', () {
-      expect(authRedirect(path: '/report', signedIn: false, recovering: false), isNull);
-      expect(authRedirect(path: '/track', signedIn: false, recovering: false), isNull);
+      expect(authRedirect(path: '/report', signedIn: false), isNull);
+      expect(authRedirect(path: '/track', signedIn: false), isNull);
     });
     test('con sesión la bienvenida lleva al inicio', () {
-      expect(authRedirect(path: '/', signedIn: true, recovering: false), '/home');
-      expect(authRedirect(path: '/login', signedIn: true, recovering: false), '/home');
-    });
-    test('recuperación de contraseña fuerza la pantalla de nueva contraseña', () {
-      expect(authRedirect(path: '/home', signedIn: true, recovering: true), '/reset-password');
-      expect(authRedirect(path: '/reset-password', signedIn: true, recovering: true), isNull);
+      expect(authRedirect(path: '/', signedIn: true), '/home');
+      expect(authRedirect(path: '/login', signedIn: true), '/home');
     });
   });
 

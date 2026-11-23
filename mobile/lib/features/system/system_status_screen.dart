@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_theme.dart';
@@ -11,27 +10,27 @@ final apiHealthProvider = FutureProvider.autoDispose<String>((ref) async {
   return data['status'] == 'ok' ? 'API operativa' : 'Respuesta inesperada';
 });
 
-/// Lectura pública de categorías activas: verifica Supabase + RLS para usuarios sin sesión.
-final categoriesProvider = FutureProvider.autoDispose<List<String>>((ref) async {
-  final rows = await Supabase.instance.client.from('categories').select('name').order('name');
-  return [for (final r in rows) r['name'] as String];
+/// Categorías activas vía API: verifica la cadena API → configuración institucional.
+final _categoryNamesProvider = FutureProvider.autoDispose<List<String>>((ref) async {
+  final cats = await ref.watch(apiClientProvider).categories();
+  return [for (final c in cats) c.name];
 });
 
-/// Pantalla de verificación de la Fase 1: conexión de la app con FastAPI y Supabase.
+/// Diagnóstico: conexión de la app con la API AlertaBGA.
 class SystemStatusScreen extends ConsumerWidget {
   const SystemStatusScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final api = ref.watch(apiHealthProvider);
-    final categories = ref.watch(categoriesProvider);
+    final categories = ref.watch(_categoryNamesProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Estado de conexión')),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(apiHealthProvider);
-          ref.invalidate(categoriesProvider);
+          ref.invalidate(_categoryNamesProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -47,7 +46,7 @@ class SystemStatusScreen extends ConsumerWidget {
               failed: api.hasError,
             ),
             _StatusTile(
-              title: 'Supabase (categorías públicas)',
+              title: 'Categorías de reporte',
               value: categories.when(
                 data: (v) => v.isEmpty ? 'Sin categorías activas' : v.join(' · '),
                 loading: () => 'Verificando…',

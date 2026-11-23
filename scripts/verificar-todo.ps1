@@ -19,6 +19,7 @@ Probar "Dashboard (tipos TypeScript)"     "$root\web"       { npx tsc --noEmit }
 Probar "ETL PySpark (pytest)"             "$root\analytics" { .\.venv\Scripts\python -m pytest }
 Probar "App móvil (flutter analyze)"      "$root\mobile"    { flutter analyze }
 Probar "App móvil (flutter test)"         "$root\mobile"    { flutter test }
+Probar "E2E backend (API + MongoDB + S3)"  "$root\web"       { .\.venv\Scripts\python scripts\verificar_reportes.py }
 
 Write-Host "`n===== RESUMEN =====" -ForegroundColor Yellow
 $resultados.GetEnumerator() | ForEach-Object {
