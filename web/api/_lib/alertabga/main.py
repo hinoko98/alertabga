@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from .auth import AuthError
 from .config import get_settings
-from .routers import health, historico, me
+from .routers import health, historico, evidence, me, reports
 
 PREFIX = "/api/py"
 
@@ -33,4 +33,6 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix=PREFIX)
     app.include_router(me.router, prefix=PREFIX)
     app.include_router(historico.router, prefix=PREFIX)
+    app.include_router(reports.router, prefix=PREFIX)
+    app.include_router(evidence.router, prefix=PREFIX)
     return app

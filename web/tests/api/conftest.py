@@ -19,6 +19,9 @@ os.environ.update(
         "R2_ACCESS_KEY_ID": "",
         "R2_SECRET_ACCESS_KEY": "",
         "R2_BUCKET": "",
+        "R2_ENDPOINT_URL": "",
+        "R2_PUBLIC_ENDPOINT_URL": "",
+        "RATE_LIMIT_SALT": "sal-de-prueba",
     }
 )
 

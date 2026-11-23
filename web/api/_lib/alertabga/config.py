@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     r2_access_key_id: str | None = None
     r2_secret_access_key: str | None = None
     r2_bucket: str | None = None
+    # Opcionales: en local se usa la interfaz S3 de Supabase Storage como sustituto de R2.
+    r2_endpoint_url: str | None = None
+    r2_public_endpoint_url: str | None = None  # host que verán los clientes en las URLs firmadas
+    r2_region: str = "auto"
+
+    rate_limit_salt: str = ""
 
     mongodb_uri: str | None = None
     mongodb_db: str = "alertabga"
@@ -29,8 +35,14 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.api_allowed_origins.split(",") if o.strip()]
 
     @property
+    def r2_endpoint(self) -> str | None:
+        if self.r2_endpoint_url:
+            return self.r2_endpoint_url
+        return f"https://{self.r2_account_id}.r2.cloudflarestorage.com" if self.r2_account_id else None
+
+    @property
     def r2_configured(self) -> bool:
-        return all([self.r2_account_id, self.r2_access_key_id, self.r2_secret_access_key, self.r2_bucket])
+        return all([self.r2_endpoint, self.r2_access_key_id, self.r2_secret_access_key, self.r2_bucket])
 
 
 @lru_cache

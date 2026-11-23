@@ -27,3 +27,9 @@ insert into public.app_settings (key, value, description) values
    '{"max":5,"window_minutes":60}',
    'Máximo de reportes por dispositivo/IP por ventana')
 on conflict (key) do nothing;
+
+-- SOLO LOCAL: bucket privado que emula Cloudflare R2 vía la interfaz S3 de Supabase Storage.
+-- En producción las evidencias van a R2 (ver docs/configuracion/variables-entorno.md).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('alertabga-evidencias', 'alertabga-evidencias', false, 5242880, array['image/jpeg','image/png','image/webp'])
+on conflict (id) do nothing;
