@@ -4,6 +4,8 @@ Siempre se devuelven con `fuente`, `tipo_fuente` y `periodo` para que la interfa
 con reportes ciudadanos recientes (RB-01, RB-03).
 """
 
+import time
+from collections import Counter
 from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -71,3 +73,45 @@ def agregados(
                  .sort(*orden).limit(limite))
     return {"fuente": f, "tipo_fuente": meta.get("tipo_fuente"), "periodo": meta.get("periodo"),
             "dimension": dimension.value, "items": items}
+
+
+_HEAT_CACHE: dict[tuple, tuple[float, dict]] = {}
+_HEAT_TTL_S = 3600  # el histórico solo cambia cuando se recarga el ETL
+
+
+def heat_cells(db, desde: int, hasta: int, categoria: str | None) -> dict:
+    """Agrupa las coordenadas del histórico en celdas de ~110 m (3 decimales) para el mapa de calor."""
+    key = (id(db), desde, hasta, categoria)
+    hit = _HEAT_CACHE.get(key)
+    if hit and time.monotonic() - hit[0] < _HEAT_TTL_S:
+        return hit[1]
+    q: dict = {"anio": {"$gte": desde, "$lte": hasta}}
+    if categoria:
+        q["categoria"] = categoria
+    cells: Counter = Counter()
+    for d in db.historical_crimes.find(q, {"_id": 0, "location.coordinates": 1}):
+        lon, lat = d["location"]["coordinates"]
+        cells[(round(lat, 3), round(lon, 3))] += 1
+    out = {"fuente": FUENTES["historico"], "tipo_fuente": "HISTORICO_GEORREFERENCIADO", "periodo": f"{desde}-{hasta}",
+           "total": sum(cells.values()), "max": max(cells.values(), default=0),
+           "puntos": [[lat, lon, n] for (lat, lon), n in cells.most_common(20_000)],
+           "advertencia": "Delitos históricos oficiales; no son reportes ciudadanos de la plataforma."}
+    _HEAT_CACHE[key] = (time.monotonic(), out)
+    return out
+
+
+@router.get("/calor")
+def calor(
+    desde: int = Query(default=2019, ge=2010, le=2021),
+    hasta: int = Query(default=2021, ge=2010, le=2021),
+    categoria: str | None = Query(default=None, max_length=80),
+    _: CurrentUser = Depends(require_roles(*STAFF_ROLES)),
+) -> dict:
+    if desde > hasta:
+        raise HTTPException(status_code=422, detail="El año inicial debe ser menor o igual al final")
+    return heat_cells(_db(), desde, hasta, categoria)
+
+
+@router.get("/categorias")
+def categorias(_: CurrentUser = Depends(require_roles(*STAFF_ROLES))) -> list[str]:
+    return sorted(c for c in _db().historical_crimes.distinct("categoria") if c)

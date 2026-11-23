@@ -1,7 +1,8 @@
 # Guía: cómo lanzar y probar AlertaBGA (Windows)
 
-Estado actual: **Fase 2 — app ciudadana** completa (cuenta, reporte con GPS/mapa y fotos, reporte anónimo, seguimiento, emergencias).
-La bandeja de operadores del panel web llega en la Fase 3.
+Estado actual: **Fase 2 — app ciudadana** y **Fase 3 — panel institucional** completas.
+- App: cuenta, reporte con GPS/mapa y fotos, reporte anónimo, seguimiento y emergencias.
+- Panel: panel principal, mapa territorial con calor, bandeja, detalle con gestión de estados, estadísticas y administración.
 
 **Arquitectura local (ADR 0003):**
 | Pieza | Cómo corre | Datos |
@@ -77,18 +78,33 @@ Debe terminar con 8 líneas **OK** (la última es el E2E del backend; necesita e
 
 ---
 
-## 3. Probar el dashboard web (manual)
+## 3. Probar el panel web (manual)
 
-1. Asegúrese de tener los usuarios de prueba (tabla de credenciales arriba; el script de arranque los crea).
-2. Abra http://localhost:4000. Sin sesión, debe redirigir a **/login**.
-3. Ingrese como **administrador**. Verá "Estado de la plataforma" con las tarjetas:
-   - API Python, Autenticación y rol, Supabase, Almacenamiento de evidencias y MongoDB en **Operativo**.
-   Repita con el **operador** y el **supervisor**: también entran.
-4. Cierre sesión e ingrese como **ciudadano** de Supabase. Debe ver "Sin acceso al panel institucional".
-   (Los ciudadanos de la app **no** existen en Supabase: se registran desde el teléfono y viven en MongoDB.)
-5. **Histórico institucional** (con el token del admin), desde http://localhost:4000/api/py/docs → `GET /historico/resumen`. Devuelve dos fuentes etiquetadas:
-   - `HISTORICO_GEORREFERENCIADO`, periodo 2010-2021, 127.754 registros
-   - `OFICIAL_AGREGADO`, periodo 2016-01..2026-09, 268.995 registros
+**Datos de demostración** (opcional, para ver el panel con información):
+```powershell
+cd web; .\.venv\Scripts\python scripts\sembrar_demo.py          # 80 reportes BGA-DEMO-* de los últimos 45 días
+.\.venv\Scripts\python scripts\sembrar_demo.py --borrar             # quitarlos
+```
+
+1. Abra http://localhost:4000. Sin sesión redirige a **/login**. Use las credenciales de la tabla de arriba.
+2. **Panel principal** (administrador): abiertos, recibidos hoy, sin asignar, asignados a usted, prioridad alta, serie de 14 días, estados, últimos reportes y categorías. Se actualiza solo cada 20 s.
+3. **Bandeja de incidentes**: pestañas Abiertos · Sin asignar · Asignados a mí · Cerrados · Todos; búsqueda por radicado o texto, filtros de estado, categoría, prioridad y fechas; paginación. Supervisor y administrador ven **Exportar CSV** (sin datos personales).
+4. **Detalle** (clic en un radicado): descripción, ubicación en el mapa, fotos, reportante (o "anónimo"), historial completo marcado *Interno* / *Visible al ciudadano*.
+5. **Gestión como operador** (`operador.prueba@example.com`):
+   - En un reporte sin asignar → **Tomar este reporte** → queda "Asignado a Operador Prueba".
+   - Cambiar estado → **En atención** (con nota interna opcional) → luego **Cerrado**: exige un mensaje para el ciudadano.
+   - Un operador **no** puede gestionar reportes asignados a otra persona ni reabrir cerrados.
+   - Si el reporte vino de la app, abra el seguimiento en el teléfono: verá los estados y el mensaje, **nunca** la nota interna ni el nombre del funcionario.
+6. **Gestión como supervisor**: asigna o reasigna a cualquier funcionario y puede reabrir un reporte cerrado.
+7. **Mapa territorial**: puntos por estado, calor de reportes y, en "Referencia histórica oficial", el calor de los 127.754 delitos 2010–2021 por años y tipo de delito (siempre etiquetado con su fuente).
+8. **Estadísticas** (supervisor/administrador): reportes por día, categoría, estado, prioridad, hora y día de la semana; medianas de primera gestión y de cierre; histórico oficial por año, delito, comuna y barrio. El operador ve "Sección restringida".
+9. **Administración** (solo administrador):
+   - **Personal**: crear cuentas (si no escribe contraseña, se genera una temporal que se muestra una sola vez), cambiar rol, activar o desactivar. No puede quitarse su propio rol.
+   - **Categorías**: crear y activar/desactivar; los cambios aparecen de inmediato en la app.
+   - **Ajustes**: límite de reportes por ciudadano o dispositivo.
+   - **Auditoría**: cada vista de detalle, cambio, asignación, exportación y acción administrativa.
+10. **Estado de la plataforma**: verificación de conexiones (API, autenticación, Supabase, almacenamiento, MongoDB).
+11. Ingrese como **ciudadano** de Supabase: debe ver "Sin acceso al panel institucional". (Los ciudadanos de la app viven en MongoDB, no en Supabase.)
 
 ## 4. Probar la app móvil
 

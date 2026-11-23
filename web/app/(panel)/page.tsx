@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { SystemStatus } from "@/components/system/SystemStatus";
+import { Dashboard } from "@/components/dashboard/Dashboard";
 
-export const metadata: Metadata = { title: "Estado de la plataforma" };
+export const metadata: Metadata = { title: "Panel principal" };
 
-export default function SystemStatusPage() {
-  return <SystemStatus />;
+export default function HomePage() {
+  return <Dashboard />;
 }

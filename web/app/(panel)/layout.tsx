@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Logo } from "@/components/brand/Logo";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { SessionProvider } from "@/components/layout/SessionProvider";
+import { MobileNav, Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { getSessionState } from "@/services/session";
 
@@ -29,12 +30,15 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-dvh">
-      <Sidebar role={session.profile.role} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar profile={session.profile} title="Estado de la plataforma" />
-        <main className="flex-1 px-4 py-6 md:px-8">{children}</main>
+    <SessionProvider profile={session.profile}>
+      <div className="flex min-h-dvh">
+        <Sidebar role={session.profile.role} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Topbar profile={session.profile} />
+          <MobileNav role={session.profile.role} />
+          <main className="flex-1 px-4 py-6 md:px-8">{children}</main>
+        </div>
       </div>
-    </div>
+    </SessionProvider>
   );
 }

@@ -76,3 +76,29 @@ def test_mongo_no_configurado_503(client, monkeypatch):
     monkeypatch.setattr(historico, "get_db", lambda: None)
     r = client.get("/api/py/historico/resumen", headers=_as(monkeypatch, "operador"))
     assert r.status_code == 503
+
+
+def test_calor_agrupa_en_celdas_y_etiqueta_fuente(client, mongo, monkeypatch):
+    from alertabga.routers import historico
+
+    historico._HEAT_CACHE.clear()
+    mongo.historical_crimes.insert_many([
+        {"categoria": "HURTO", "anio": 2020, "location": {"type": "Point", "coordinates": [-73.12341, 7.11112]}},
+        {"categoria": "HURTO", "anio": 2021, "location": {"type": "Point", "coordinates": [-73.12339, 7.11108]}},
+        {"categoria": "RIÑAS", "anio": 2020, "location": {"type": "Point", "coordinates": [-73.13, 7.12]}},
+        {"categoria": "HURTO", "anio": 2012, "location": {"type": "Point", "coordinates": [-73.14, 7.13]}},
+    ])
+    r = client.get("/api/py/historico/calor?desde=2019&hasta=2021", headers=_as(monkeypatch, "operador"))
+    assert r.status_code == 200
+    body = r.json()
+    assert body["tipo_fuente"] == "HISTORICO_GEORREFERENCIADO" and body["periodo"] == "2019-2021"
+    assert body["total"] == 3 and body["max"] == 2
+    assert body["puntos"][0] == [7.111, -73.123, 2]
+    solo = client.get("/api/py/historico/calor?desde=2010&hasta=2021&categoria=RI%C3%91AS",
+                      headers=_as(monkeypatch, "operador")).json()
+    assert solo["total"] == 1
+
+
+def test_calor_rango_invertido_422(client, mongo, monkeypatch):
+    r = client.get("/api/py/historico/calor?desde=2021&hasta=2015", headers=_as(monkeypatch, "operador"))
+    assert r.status_code == 422

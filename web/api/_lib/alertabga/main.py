@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from .auth import AuthError
 from .config import get_settings
-from .routers import citizen_auth, evidence, health, historico, me, reports
+from .routers import admin, citizen_auth, evidence, health, historico, me, panel, reports
 
 PREFIX = "/api/py"
 
@@ -36,4 +36,6 @@ def create_app() -> FastAPI:
     app.include_router(citizen_auth.router, prefix=PREFIX)
     app.include_router(reports.router, prefix=PREFIX)
     app.include_router(evidence.router, prefix=PREFIX)
+    app.include_router(panel.router, prefix=PREFIX)
+    app.include_router(admin.router, prefix=PREFIX)
     return app
