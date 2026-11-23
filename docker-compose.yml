@@ -38,7 +38,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "127.0.0.1:8000:8000"
+      # Solo este PC por defecto. scripts/apk-pruebas.ps1 usa API_BIND=0.0.0.0 para que un teléfono de
+      # la misma red Wi-Fi llegue a la API.
+      - "${API_BIND:-127.0.0.1}:8000:8000"
     depends_on:
       mongo:
         condition: service_healthy

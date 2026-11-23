@@ -155,6 +155,30 @@ adb install -r build\app\outputs\flutter-apk\app-debug.apk
 
 ---
 
+## 4b. APK para un teléfono Android real
+
+El teléfono y el PC deben estar en **la misma red Wi-Fi**.
+
+1. Levante todo: `powershell -ExecutionPolicy Bypass -File scripts\iniciar-entorno.ps1`
+2. **Una sola vez**, en PowerShell **como administrador**, permita los puertos de la API y de las fotos (red Wi-Fi marcada como *Privada*):
+   ```powershell
+   New-NetFirewallRule -DisplayName "AlertaBGA pruebas" -Direction Inbound -Protocol TCP -LocalPort 8000,54321 -Profile Private -Action Allow
+   ```
+3. Genere el APK: `powershell -ExecutionPolicy Bypass -File scriptspk-pruebas.ps1`
+   - Detecta la IP del PC (ej. `192.168.1.4`), publica la API en la red y compila `dist\AlertaBGA-pruebas.apk` apuntando a `http://<IP>:8000/api/py`.
+   - Si la IP del PC cambia (otro Wi-Fi, reinicio del router), vuelva a ejecutarlo.
+4. Instale: con cable USB y depuración activa `adb install -r dist\AlertaBGA-pruebas.apk`, o copie el archivo al teléfono y ábralo (permita "instalar apps desconocidas").
+5. Compruebe desde Chrome del teléfono: `http://<IP>:8000/api/py/health` debe responder.
+6. Pruebe: crear cuenta, reportar con GPS y foto, reporte anónimo y seguimiento. El reporte aparece en la bandeja del panel web en ≤ 20 s; gestiónelo allí y vea el cambio de estado en el teléfono.
+
+| Síntoma en el teléfono | Causa probable |
+|---|---|
+| "No se pudo conectar" | Firewall sin la regla, Wi-Fi distinto o red marcada como *Pública* |
+| El reporte se envía pero la foto falla | Falta el puerto 54321 en la regla del firewall |
+| Funcionaba y dejó de hacerlo | Cambió la IP del PC: vuelva a ejecutar `apk-pruebas.ps1` |
+
+Para volver a dejar la API solo en este PC: `docker compose up -d api` (sin `API_BIND`).
+
 ## 5. Recargar datos históricos (opcional)
 ```powershell
 cd analytics
